@@ -1,7 +1,7 @@
 from algo import *
 from grid_world import GridWorld
 import numpy as np
-from policy import SoftmaxPolicy,egreedy_policy
+from policy import SoftmaxPolicy, EGreedyPolicy
 from algo import QLearning,SARSA
 import matplotlib.pyplot as plt
 
@@ -44,7 +44,7 @@ gamma = 0.8
 #exit()
 # Defining env and algorithms
 
-policy = SoftmaxPolicy(tau)
+policy = EGreedyPolicy(epsilon)
 q_learning = QLearning(env, gamma, policy)
 
 

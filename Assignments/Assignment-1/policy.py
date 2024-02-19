@@ -27,7 +27,7 @@ class SoftmaxPolicy(Policy):
         action_probs = softmax(Q[state[0,0], state[0,1]]/self.tau)
         return rg.choice(np.arange(len(action_probs)), p=action_probs)
 
-class egreedy_policy(Policy):
+class EGreedyPolicy(Policy):
     def __init__(self, epsilon=0):
         self.epsilon = epsilon
     
@@ -36,7 +36,6 @@ class egreedy_policy(Policy):
     
     def __call__(self, Q,state):
         if rg.rand() < self.epsilon or not Q[state[0,0], state[0,1]].any():
-            return rg.randint(0, Q.shape[1])
+            return rg.randint(0, Q.shape[-1])
         else:
-            state = seq_to_col_row(state)
-            return np.argmax(Q[state[0,0], state[0,1]])  
+            return np.argmax(Q[state[0,0], state[0,1]])
