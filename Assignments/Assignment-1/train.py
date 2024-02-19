@@ -38,30 +38,52 @@ env = gw.create_gridworld()
 epsilon = 0.4
 alpha = 0.4
 tau = 0.01
-gamma = 0.8
+gamma = 0.9
 
 #print(env.P[36, 4])
 #exit()
 # Defining env and algorithms
 
-policy = EGreedyPolicy(epsilon)
-q_learning = QLearning(env, gamma, policy)
+policy = SoftmaxPolicy(epsilon)
+sarsa = SARSA(env, gamma, policy)
 
 
 # Training
-episodes = 1000
-Q, episode_rewards, steps_to_completion = q_learning.train(alpha, episodes)
-q_learning.plot(episode_rewards, steps_to_completion)
-plt.figure()
-plt.plot(steps_to_completion)
-plt.xlabel('Episode')
+episodes = 10000
+
+
+# Q, episode_rewards, steps_to_completion = sarsa.train(alpha, episodes)
+
+num_expts = 5
+reward_avgs, steps_avgs = [], []
+
+for i in range(num_expts):
+    print("Experiment: %d"%(i+1))
+    Q, rewards, steps = sarsa.train(alpha, episodes)
+    reward_avgs.append(rewards)
+    steps_avgs.append(steps)
+
+reward_avgs = np.array(reward_avgs)
+steps_avgs = np.array(steps_avgs)
+
+avg_steps_q = np.mean(steps_avgs, axis=0)[::100]
+avg_rewards_q = np.mean(reward_avgs, axis=0)[::100]
+std_dev_steps = np.std(steps_avgs, axis=0)[::100]
+std_dev_rewards = np.std(reward_avgs, axis=0)[::100]
+
+# sarsa.plot(episode_rewards, steps_to_completion)
+plt.figure(figsize = (5,5))
+plt.plot(avg_steps_q)
+plt.fill_between(range(len(avg_steps_q)), avg_steps_q - std_dev_steps,avg_steps_q + std_dev_steps, color='lightblue', alpha=0.5, label='Mean ± Std Dev')
+plt.xlabel('Episode (1 unit = 100 episodes)')
 plt.ylabel('Number of steps to Goal')
 # plt.legend()
 plt.show()
 
-plt.figure()
-plt.plot(episode_rewards)
-plt.xlabel('Episode')
+plt.figure(figsize = (5,5))
+plt.plot(avg_rewards_q)
+plt.fill_between(range(len(avg_rewards_q)), avg_rewards_q - std_dev_rewards,avg_rewards_q + std_dev_rewards, color='lightblue', alpha=0.5, label='Mean ± Std Dev')
+plt.xlabel('Episode (1 unit = 100 episodes)')
 plt.ylabel('Total Reward')
 # plt.legend()
 plt.show()

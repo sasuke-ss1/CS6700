@@ -2,7 +2,7 @@ import numpy as np
 from policy import *
 from grid_world import GridWorld
 from numpy import ndarray
-from utils import plot_Q
+from utils import plot_Q,seq_to_col_row,row_col_to_seq
 from tqdm import tqdm
 from copy import deepcopy
 from policy import Policy
@@ -46,6 +46,8 @@ class QLearning(object):
             episode_rewards[ep] = tot_reward
             steps_to_completion[ep] = steps
 
+        self.env.render(True, row_col_to_seq(state))
+
         return self.Q, episode_rewards, steps_to_completion
     
 
@@ -56,10 +58,10 @@ class QLearning(object):
                                                                         self.Q.max(), self.Q.min()))
 
 class SARSA(object):
-    def __init__(self, env: GridWorld, Q: ndarray, gamma: float, policy: Policy, print_freq=100):
+    def __init__(self, env: GridWorld, gamma: float, policy: Policy, print_freq=100):
         self.env = deepcopy(env)
         self.gamma = gamma
-        self.Q = np.zeros((self.env.num_rows, self.env.num_cols, len(self.env.num_actions)))
+        self.Q = np.zeros((self.env.num_rows, self.env.num_cols, self.env.num_actions))
         self.policy = policy
         self.print_freq = print_freq
 
@@ -68,7 +70,7 @@ class SARSA(object):
 
     def reset(self):
         self.env.reset()
-        self.Q = np.zeros((self.env.num_rows, self.env.num_cols, len(self.env.num_actions)))
+        self.Q = np.zeros((self.env.num_rows, self.env.num_cols, self.env.num_actions))
 
     def train(self, alpha, episodes=1000):
         episode_rewards = np.zeros(episodes)
@@ -85,7 +87,7 @@ class SARSA(object):
             while not done:
                 state_next, reward, done = self.env.step(state, action)
                 action_next = self.policy(self.Q, state_next)
-                self.Q[state[0,0]][state[0,1]][action] = self.Q[state[0,0]][state[0,1]][action] + alpha * (reward + self.gamma * (self.Q[state_next[0,0]][state_next[1]][action_next]) - self.Q[state[0]][state[1]][action]) # update equation                          
+                self.Q[state[0,0]][state[0,1]][action] = self.Q[state[0,0]][state[0,1]][action] + alpha * (reward + self.gamma * (self.Q[state_next[0,0]][state_next[0,1]][action_next]) - self.Q[state[0,0]][state[0,1]][action]) # update equation                          
                 tot_reward += reward
                 steps += 1
                 
@@ -93,6 +95,7 @@ class SARSA(object):
             
             episode_rewards[ep] = tot_reward
             steps_to_completion[ep] = steps
+        self.env.render(True, row_col_to_seq(state))
         
         return self.Q, episode_rewards, steps_to_completion
     

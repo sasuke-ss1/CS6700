@@ -8,7 +8,7 @@ LEFT = 2
 RIGHT = 3
 
 def plot_Q(Q, message = "Q plot"):
-    plt.figure(figsize=(10,10))
+    plt.figure(figsize=(7,7))
     plt.title(message)
     plt.pcolor(Q.max(-1), edgecolors='k', linewidths=2)
     plt.colorbar()
@@ -25,6 +25,7 @@ def plot_Q(Q, message = "Q plot"):
     policyy = np.vectorize(y_direct)(policy)
     idx = np.indices(policy.shape)
     plt.quiver(idx[1].ravel()+0.5, idx[0].ravel()+0.5, policyx.ravel(), policyy.ravel(), pivot="middle", color='red')
+    plt.gca().invert_yaxis()
     plt.show()
 
 def row_col_to_seq(row_col, num_cols = 10):  #Converts state number to row_column format

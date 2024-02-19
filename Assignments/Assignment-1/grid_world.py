@@ -229,7 +229,8 @@ class GridWorld:
 
         assert  not render_agent ^ bool(state)
         if render_agent:
-            grid[state[:, 0], state[:, 1]] = 6
+            state_tuple = seq_to_col_row(state[0])
+            grid[state_tuple[:, 0], state_tuple[:, 1]] = 6
 
         if not render_agent:
             cmap = colors.ListedColormap(['cyan', 'blue', 'green', 'yellow', 'red', 'k'])
@@ -238,7 +239,10 @@ class GridWorld:
         
         plt.figure()        
         plt.gca().invert_yaxis()
-        plt.pcolor(grid, cmap=cmap, edgecolors='k', linewidths=2)
+        plt.legend()
+        pcm = plt.pcolor(grid, cmap=cmap, edgecolors='k', linewidths=2)
+        cbar = plt.colorbar(pcm, ticks=np.arange(0, 7))
+        cbar.ax.set_yticklabels(['Normal','Start', 'Goal', 'Obstructed', 'Bad', 'Restart', 'Agent'])
         plt.show()
 
 
