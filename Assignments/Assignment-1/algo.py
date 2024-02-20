@@ -46,7 +46,7 @@ class QLearning(object):
             episode_rewards[ep] = tot_reward
             steps_to_completion[ep] = steps
 
-        self.env.render(True, row_col_to_seq(state))
+        #self.env.render(True, row_col_to_seq(state))
 
         return self.Q, episode_rewards, steps_to_completion
     
@@ -95,7 +95,7 @@ class SARSA(object):
             
             episode_rewards[ep] = tot_reward
             steps_to_completion[ep] = steps
-        self.env.render(True, row_col_to_seq(state))
+        # self.env.render(True, row_col_to_seq(state))
         
         return self.Q, episode_rewards, steps_to_completion
     
