@@ -6,7 +6,7 @@ from algo import QLearning,SARSA
 import matplotlib.pyplot as plt
 from argparse import ArgumentParser
 import yaml
-import wandb
+# import wandb
 
 
 def train_wb():
@@ -92,14 +92,18 @@ def train(args):
     # Training
     episodes = args.episodes
 
-    num_expts = 5
+    num_expts = 1
     reward_avgs, steps_avgs = [], []
 
     for i in range(num_expts):
         print("Experiment: %d"%(i+1))
         Q, rewards, steps = algorithm.train(alpha, episodes)
+        if i == 0:
+            algorithm.plot(rewards,steps)
         reward_avgs.append(rewards)
         steps_avgs.append(steps)
+    
+    
 
     reward_avgs = np.array(reward_avgs)
     steps_avgs = np.array(steps_avgs)
@@ -128,13 +132,13 @@ def train(args):
 
 if __name__ == "__main__":
     parser = ArgumentParser()
-    parser.add_argument('--wandb_project', '-wp', default='RLAssign1', type=str, help="The wandb project name where run will be stored")
+    parser.add_argument('--wandb_project', '-wp', default='RL-A1', type=str, help="The wandb project name where run will be stored")
     parser.add_argument('--episodes', '-ep', default=10000, type=int, help="The number of episodes to play per experiment")
     parser.add_argument('--wind', '-w', type=bool, default=False, help="Sets the wind in the environment")
     parser.add_argument('--p', '-p', default=1, type=float, help='Good transition probability')
     parser.add_argument('--wandb', '-wb', default=False, type=bool, help="Flag to start wandb sweep over hyperparameters")
-    parser.add_argument('--start_x', '-sx', default=0, type=int, help='Starting x location')
-    parser.add_argument('--start_y', '-sy', default=4, type=int, help='Starting y location')
+    parser.add_argument('--start_x', '-sx', default=3, type=int, help='Starting x location')
+    parser.add_argument('--start_y', '-sy', default=6, type=int, help='Starting y location')
     parser.add_argument('--epsilon', '-e', type=float, default=0.4, help="Value of epsilon for epsilon greedy policy")
     parser.add_argument('--alpha', '-a', type=float, default=0.4, help="Value of learning rate")
     parser.add_argument('--tau', '-t', default=0.01, type=float, help="Value of temperature for softmax function")
@@ -173,8 +177,8 @@ if __name__ == "__main__":
     env = gw.create_gridworld()
 
     if args.wandb:
-        wandb.login(key="e99813e81e3838e6607d858a20693d589933495f")
-        with open("./sweep.yml", "r") as f:
+        wandb.login(key="ffbdeb8b8eb61fe76925bb00113546a4c1d0581e")
+        with open("/kaggle/input/assgn1/sweep.yml", "r") as f:
             sweep_config = yaml.safe_load(f)
 
         sweep_id = wandb.sweep(sweep_config, project=args.wandb_project)

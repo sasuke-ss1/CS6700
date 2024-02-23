@@ -201,21 +201,33 @@ class GridWorld:
             if r <= p:
                 break
 
-        if seq_next_state in self.goal_states_seq:
-            self.done = True
-            #print(self.steps)
-            return seq_to_col_row(seq_next_state), self.R[seq_next_state], self.done
-        if self.max_steps <= self.steps:
-            self.done=True
-            return seq_to_col_row(seq_next_state), self.R[seq_next_state], self.done
+        # if seq_next_state in self.goal_states_seq:
+        #     self.done = True
+        #     return seq_to_col_row(seq_next_state), self.R[seq_next_state], self.done
+        # if self.max_steps <= self.steps:
+        #     self.done=True
+        #     return seq_to_col_row(seq_next_state), self.R[seq_next_state], self.done
 
         if(self.wind and np.random.random() < 0.4):
-          arr = self.P[seq_next_state, :, 3]
-          next_next = np.where(arr == np.amax(arr))
-          next_next = next_next[0][0]
-          return seq_to_col_row(next_next), self.R[next_next], self.done
+            arr = self.P[seq_next_state, :, 3]
+            next_next = np.where(arr == np.amax(arr))
+            next_next = next_next[0][0]
+            if next_next in self.goal_states_seq:
+                self.done = True
+            if self.max_steps <= self.steps:
+                self.done = True
+            return seq_to_col_row(next_next), self.R[next_next], self.done
         else:
-          return seq_to_col_row(seq_next_state), self.R[seq_next_state], self.done
+            if seq_next_state in self.goal_states_seq:
+                self.done = True
+            if self.max_steps <= self.steps:
+                self.done = True
+            
+            return seq_to_col_row(seq_next_state), self.R[seq_next_state], self.done
+
+
+
+         
 
     def render(self, render_agent=False, state=None):
         grid = np.zeros(shape=(self.num_rows, self.num_cols)) 
