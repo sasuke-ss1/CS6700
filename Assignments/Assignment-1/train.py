@@ -6,7 +6,7 @@ from algo import QLearning,SARSA
 import matplotlib.pyplot as plt
 from argparse import ArgumentParser
 import yaml
-# import wandb
+import wandb
 
 
 def train_wb():
