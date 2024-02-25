@@ -47,6 +47,7 @@ class QLearning(object):
                 state, action = state_next, action_next
                 if done:
                     self.state_visits[state_next[0,0],state_next[0,1],0] += 1
+            # print(state)
             
             episode_rewards[ep] = tot_reward
             steps_to_completion[ep] = steps
@@ -59,7 +60,7 @@ class QLearning(object):
 
     # Need better plot function
     def plot(self, episode_rewards, steps_to_completion):
-        plot_Q(self.Q, message = "Reward: %f, Steps: %.2f, Qmax: %.2f, Qmin: %.2f"%(np.mean(episode_rewards),
+        plot_Q(self.Q, message = "Reward: %f, Steps: %.2f, Qmax: %.2f, Qmin: %.2f"%(episode_rewards[-1],
                                                                         np.mean(steps_to_completion),
                                                                         self.Q.max(), self.Q.min()))
         plot_state_visits(self.state_visits, message = "Reward: %f, Steps: %.2f, Qmax: %.2f, Qmin: %.2f"%(np.mean(episode_rewards),
@@ -114,7 +115,7 @@ class SARSA(object):
         return self.Q, episode_rewards, steps_to_completion
     
     def plot(self, episode_rewards, steps_to_completion):
-        plot_Q(self.Q, message = "Reward: %f, Steps: %.2f, Qmax: %.2f, Qmin: %.2f"%(np.mean(episode_rewards),
+        plot_Q(self.Q, message = "Reward: %f, Steps: %.2f, Qmax: %.2f, Qmin: %.2f"%(episode_rewards[-1],
                                                                     np.mean(steps_to_completion),
                                                                     self.Q.max(), self.Q.min()))
                                                                     
