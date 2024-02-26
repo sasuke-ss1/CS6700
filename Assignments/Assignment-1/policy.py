@@ -7,6 +7,10 @@ rg = np.random.RandomState(seed)
 
 
 class Policy(object):
+    '''
+    Policy parent class
+    (Subclassed by each policy)
+    '''
     def __init__(self):
         raise NotImplementedError
 
@@ -17,6 +21,9 @@ class Policy(object):
         raise NotImplementedError
 
 class SoftmaxPolicy(Policy):
+    '''
+    Implements the Softmax Policy with a temperature parameter
+    '''
     def __init__(self, tau=0):
         self.tau = tau
     
@@ -28,7 +35,12 @@ class SoftmaxPolicy(Policy):
         return rg.choice(np.arange(len(action_probs)), p=action_probs)
 
 class EGreedyPolicy(Policy):
+    '''
+    Implements the E-Greedu Policy
+    (Greedy for 1-e fraction of runs)
+    '''
     def __init__(self, epsilon=0):
+        assert epsilon >= 0 and epsilon <= 1, "Epsilon should be between [0,1]"
         self.epsilon = epsilon
     
     def change_params(self, params):

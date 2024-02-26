@@ -85,20 +85,17 @@ class GridWorld:
         # rewards structure
 
         self.R = self.r_step * np.ones((self.num_states, 1))
-        #self.R[self.num_states-1] = 0
         self.R[self.goal_states_seq] = self.r_goal
 
         for i in range(self.num_bad_states):
             if self.r_bad is None:
                 raise Exception("Bad state specified but no reward is given")
             bad_state = row_col_to_seq(self.bad_states[i,:].reshape(1,-1), self.num_cols)
-            #print("bad states", bad_state)
             self.R[bad_state, :] = self.r_bad
         for i in range(self.num_restart_states):
             if self.r_restart is None:
                 raise Exception("Restart state specified but no reward is given")
             restart_state = row_col_to_seq(self.restart_states[i,:].reshape(1,-1), self.num_cols)
-            #print("restart_state", restart_state)
             self.R[restart_state, :] = self.r_restart
 
         # probability model
@@ -200,13 +197,6 @@ class GridWorld:
 
             if r <= p:
                 break
-
-        # if seq_next_state in self.goal_states_seq:
-        #     self.done = True
-        #     return seq_to_col_row(seq_next_state), self.R[seq_next_state], self.done
-        # if self.max_steps <= self.steps:
-        #     self.done=True
-        #     return seq_to_col_row(seq_next_state), self.R[seq_next_state], self.done
 
         if(self.wind and np.random.random() < 0.4):
             arr = self.P[seq_next_state, :, 3]

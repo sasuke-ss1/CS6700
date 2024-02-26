@@ -1,6 +1,6 @@
+import numpy as np
 from algo import *
 from grid_world import GridWorld
-import numpy as np
 from policy import SoftmaxPolicy, EGreedyPolicy
 from algo import QLearning,SARSA
 import matplotlib.pyplot as plt
@@ -10,8 +10,11 @@ import wandb
 
 
 def train_wb():
-    run = wandb.init()
-    config = wandb.config
+    '''
+    Helper function for wandb hyperparameter sweep
+    '''
+    run = wandb.init() # Initial the run
+    config = wandb.config # Get the config
 
     policy_dict = {
         0: SoftmaxPolicy,
@@ -28,6 +31,7 @@ def train_wb():
         1: QLearning
     }
 
+    # Initialize the parameters from config
     algorithm_name = 'Q-Learning' if config.algorithm else 'SARSA' 
     policy_name = 'E-Greedy' if config.policy else 'Softmax'
     param = params[config.policy]
@@ -36,15 +40,17 @@ def train_wb():
     policy = policy_dict[config.policy](param)
     algorithm = algo_dict[config.algorithm](env, gamma, policy)
 
-    wandb.run.name = f"run_{algorithm_name}_{policy_name}_{param}_{alpha}_{gamma}"
+    wandb.run.name = f"run_{algorithm_name}_{policy_name}_{param}_{alpha}_{gamma}" # Initialize run name
     
     episodes = 5000
     num_expts = 5
     reward_avgs, steps_avgs = [], []
 
     for i in range(num_expts):
+        algorithm.reset() # Reset everything
         print("Experiment: %d"%(i+1))
-        Q, rewards, steps = algorithm.train(alpha, episodes)
+        Q, rewards, steps = algorithm.train(alpha, episodes) # Train the algorithm 
+        
         reward_avgs.append(rewards)
         steps_avgs.append(steps)
 
@@ -55,21 +61,33 @@ def train_wb():
     avg_steps_q = np.mean(steps_avgs, axis=0)
     avg_rewards_q = np.mean(reward_avgs, axis=0)
 
+    # Log results
     for a_steps, a_rewards in zip(avg_steps_q[::100], avg_rewards_q[::100]):
         wandb.log({
             'steps': a_steps,
             'reward': a_rewards
         })
     
-
-
-
 def train(args):
+    '''
+    Main train function 
+    '''
+
+    # Initialize the parameters
     epsilon = args.epsilon
     alpha = args.alpha
     tau = args.tau
     gamma = args.gamma
 
+    env_name = None
+    if args.p == 1 and not args.wind:
+        env_name = 'Env1'
+    elif args.p == 0.7 and not args.wind:
+        env_name = 'Env2'
+    else:
+        env_name = 'Env3'
+
+    # Helper dictionaries
     policy_dict = {
         0: SoftmaxPolicy,
         1: EGreedyPolicy
@@ -86,48 +104,49 @@ def train(args):
     }
 
     policy = policy_dict[args.policy](params[args.policy])
-    algorithm = algo_dict[args.algorithm](env, gamma, policy)
+    algorithm = algo_dict[args.algorithm](env, gamma, policy, name=env_name + f'_{args.start_x}{args.start_y}')
 
 
     # Training
     episodes = args.episodes
 
-    num_expts = 1
+    num_expts = 5
     reward_avgs, steps_avgs = [], []
 
     for i in range(num_expts):
+        algorithm.reset() # Reset everything
         print("Experiment: %d"%(i+1))
-        Q, rewards, steps = algorithm.train(alpha, episodes)
-        if i == 0:
-            algorithm.plot(rewards,steps)
+        Q, rewards, steps = algorithm.train(alpha, episodes) # Train the algorithm
+        
         reward_avgs.append(rewards)
         steps_avgs.append(steps)
-    
     
 
     reward_avgs = np.array(reward_avgs)
     steps_avgs = np.array(steps_avgs)
 
+    # Plot heat maps
+    algorithm.plot(np.mean(reward_avgs, axis=0),np.mean(steps_avgs, axis=0))
     avg_steps_q = np.mean(steps_avgs, axis=0)[::100]
     avg_rewards_q = np.mean(reward_avgs, axis=0)[::100]
     std_dev_steps = np.std(steps_avgs, axis=0)[::100]
     std_dev_rewards = np.std(reward_avgs, axis=0)[::100]
 
-    # sarsa.plot(episode_rewards, steps_to_completion)
-    plt.figure(figsize = (5,5))
+    # Plot Steps and Reward plots
+    plt.figure(figsize = (10,7))
     plt.plot(avg_steps_q)
     plt.fill_between(range(len(avg_steps_q)), avg_steps_q - std_dev_steps,avg_steps_q + std_dev_steps, color='lightblue', alpha=0.5, label='Mean ± Std Dev')
     plt.xlabel('Episode (1 unit = 100 episodes)')
     plt.ylabel('Number of steps to Goal')
-    # plt.legend()
+    plt.savefig(f'{env_name}_{args.start_x}{args.start_y}_{"Q" if args.algorithm else "SARSA"}_steps.png')
     plt.show()
 
-    plt.figure(figsize = (5,5))
+    plt.figure(figsize = (10,7))
     plt.plot(avg_rewards_q)
     plt.fill_between(range(len(avg_rewards_q)), avg_rewards_q - std_dev_rewards,avg_rewards_q + std_dev_rewards, color='lightblue', alpha=0.5, label='Mean ± Std Dev')
     plt.xlabel('Episode (1 unit = 100 episodes)')
     plt.ylabel('Total Reward')
-    # plt.legend()
+    plt.savefig(f'{env_name}_{args.start_x}{args.start_y}_{"Q" if args.algorithm else "SARSA"}_reward.png')
     plt.show()
 
 if __name__ == "__main__":
@@ -145,7 +164,6 @@ if __name__ == "__main__":
     parser.add_argument('--gamma', '-g', default=0.9, type=float, help="Value of the discounting factor")
     parser.add_argument('--policy', '-policy', default=0, type=int, help="Enter 0 to select Softmax Policy and 1 for epsilon greedy policy")
     parser.add_argument('--algorithm', '-algo', type=int, default=0, help="Enter 0 for SARSA algorithm and 1 for Q Learning")
-
     args = parser.parse_args()
 
     # Define Environment
