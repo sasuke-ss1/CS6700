@@ -13,7 +13,7 @@ def train_wb():
     '''
     Helper function for wandb hyperparameter sweep
     '''
-    run = wandb.init() # Initial the run
+    run = wandb.init() # Initialize the run
     config = wandb.config # Get the config
 
     policy_dict = {
