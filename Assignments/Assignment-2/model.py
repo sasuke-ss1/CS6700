@@ -23,8 +23,8 @@ class DDQN(nn.Module):
         value = self.val(value)
         advantage = self.adv(advantage)
 
-        adv = torch.max(advantage, dim=1, keepdim=True) if self.use_max else torch.mean(advantage, dim=1, keepdim=True)
-        #adv = torch.mean(advantage, dim=1, keepdim=True)
+        adv = torch.max(advantage, dim=1, keepdim=True).values if self.use_max else torch.mean(advantage, dim=1, keepdim=True)
+        
         Q_value = value + advantage - adv
 
         return Q_value

@@ -20,16 +20,16 @@ epochs = 1000
 max_timesteps = 500
 warm_up_steps = 250
 
-env = build_env('Acrobot-v1')
+env = build_env('CartPole-v1')
 n_state = env.observation_space.shape[0]
 n_action = env.action_space.n
 
 memory = Buffer(buffer_size)
 
-QNet = DDQN(n_state, n_action, [64, 256]).to(device)
-targetQNet = DDQN(n_state, n_action, [64, 256]).to(device)
+QNet = DDQN(n_state, n_action, [64, 256], use_max=True).to(device)
+targetQNet = DDQN(n_state, n_action, [64, 256], use_max=True).to(device)
 targetQNet.load_state_dict(QNet.state_dict())
-optimizer = Adam(QNet.parameters(), lr=1e-4)
+optimizer = Adam(QNet.parameters(), lr=1e-3)
 lossfn = MSELoss()
 
 print('Warming up')
