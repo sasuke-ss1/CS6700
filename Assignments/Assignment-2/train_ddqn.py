@@ -1,5 +1,5 @@
 from utils import *
-seed_everything(42)
+seed_everything(0)
 from model import *
 from argparse import ArgumentParser
 from torch.optim import Adam
@@ -112,4 +112,10 @@ for epoch in loop_obj:
         print(f'Converged at {epoch} epoch')
         exit()
 
+def list_of_ints(arg):
+    return list(map(int, arg.split(',')))
+
 print("Didnt Converge")
+
+if __name__ == '__main__':
+    pass

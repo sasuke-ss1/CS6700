@@ -37,14 +37,33 @@ class DDQN(nn.Module):
         return action.item()
     
     
-# ANK
-class REINFORCE(nn.Module):
-    def __init__(self):
-        pass
+class Policy(nn.Module):
+    def __init__(self, state_size: int, action_size: int, hidden_size: int, activation='ReLU') -> None:
+        super().__init__()
+        self.fc1 = nn.Linear(state_size, hidden_size)
+        self.fc2 = nn.Linear(hidden_size, hidden_size)
+        self.out = nn.Linear(hidden_size, action_size)
+        
+        self.act = getattr(nn, activation)()
+        self.softmax = nn.Softmax(dim=-1)
 
-    def forward(self):
-        pass
+    def forward(self, x: Tensor) -> Tensor:
+        x = self.act(self.fc1(x))
+        x = self.act(self.fc2(x))
+       
+        return self.softmax(self.out(x))
+    
+class Value(nn.Module):
+    def __init__(self, state_size: int, hidden_size: int, activation='ReLU') -> None:
+        super().__init__()
+        self.fc1 = nn.Linear(state_size, hidden_size)
+        self.fc2 = nn.Linear(hidden_size, hidden_size)
+        self.out = nn.Linear(hidden_size, 1)
+    
+        self.act = getattr(nn, activation)() 
 
-    # If you can write this then write else lets discuss
-    def get_action(self):
-        pass 
+    def forward(self, x: Tensor) -> Tensor:
+        x = self.act(self.fc1(x))
+        x = self.act(self.fc2(x))
+       
+        return self.out(x)
