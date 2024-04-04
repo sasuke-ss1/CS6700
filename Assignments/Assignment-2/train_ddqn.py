@@ -151,7 +151,7 @@ def train_wb():
 
 if __name__ == '__main__':
     parser = ArgumentParser()
-    parser.add_argument('--wandb_project', '-wp', default='RL-A2-DDQN', type=str, help="The wandb project name where run will be stored")
+    parser.add_argument('--wandb_project', '-wp', default='RL-A2-DDQN-Acrobot', type=str, help="The wandb project name where run will be stored")
     parser.add_argument('--wandb', '-wb', default=True, type=bool, help="Run WandB")
     parser.add_argument('--gamma', '-g', default='0.99', type=float, help="Discount Factor")
     parser.add_argument('--explore', '-ex', default='20000', type=int, help="Exploration Steps")
@@ -168,7 +168,7 @@ if __name__ == '__main__':
     parser.add_argument('--hidden_size2', '-h2', default='256', type=int, help="Hidden Size 2")
     args = parser.parse_args()
     
-    env = build_env('CartPole-v1')
+    env = build_env('Acrobot-v1')
     if args.wandb == False:
         num_expts = 5
         episodic_rewards_list_AVG = []

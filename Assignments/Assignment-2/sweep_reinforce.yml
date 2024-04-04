@@ -1,0 +1,21 @@
+program: train_reinforce.py
+method: bayes
+name: "complete-sweep"
+metric:
+  name: Episodic reward
+  goal: maximize
+parameters:
+    gamma:
+      values: [0.99]
+    reward_scale:
+      values: [0.01,0.1,0.5,0.99,1]
+    lr_value:
+      values: [0.0001,0.0005,0.001]
+    hidden_size:
+      values: [32,64,128,256]
+    lr_policy:
+      values: [0.001,0.005,0.01,0.0001]
+    episodes:
+      values: [500]
+    baseline:
+      values: [True, False]
