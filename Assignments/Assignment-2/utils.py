@@ -40,6 +40,3 @@ class Buffer():
             start = np.random.randint(0, len(self.buffer)-batch_size)
             return [self.buffer[i] for i in range(start, start+batch_size)]
         
-
-
-
