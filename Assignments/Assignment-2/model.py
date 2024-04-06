@@ -3,6 +3,9 @@ import torch
 from torch import Tensor
 
 class DDQN(nn.Module):
+    '''
+    The architecture for the Q network used in ddqn
+    '''
     def __init__(self, state_size: int, action_size: int, hidden_size: list[int], activation="ReLU", use_max=False) -> None:
         super().__init__()
         
@@ -38,6 +41,9 @@ class DDQN(nn.Module):
     
     
 class Policy(nn.Module):
+    '''
+    Policy network for the REINFORCE algorithm
+    '''
     def __init__(self, state_size: int, action_size: int, hidden_size: int, activation='ReLU') -> None:
         super().__init__()
         self.fc1 = nn.Linear(state_size, hidden_size)
@@ -50,10 +56,13 @@ class Policy(nn.Module):
     def forward(self, x: Tensor) -> Tensor:
         x = self.act(self.fc1(x))
         x = self.act(self.fc2(x))
-       
+
         return self.softmax(self.out(x))
     
 class Value(nn.Module):
+    '''
+    Value network for the REINFORCE algorithm
+    '''
     def __init__(self, state_size: int, hidden_size: int, activation='ReLU') -> None:
         super().__init__()
         self.fc1 = nn.Linear(state_size, hidden_size)

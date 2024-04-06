@@ -1,9 +1,7 @@
 from utils import *
-import torch
-import numpy as np
-np.random.seed(42)
-torch.manual_seed(42)
+seed_everything(0) #Seed everything apart from the environment
 from tqdm import tqdm
+from numpy import ndarray
 from model import *
 from collections import deque
 from torch.optim import Adam
@@ -11,20 +9,32 @@ from argparse import ArgumentParser
 import matplotlib.pyplot as plt
 import wandb
 import yaml
+from torch import DeviceObjType
 
+device = torch.device("cuda" if torch.cuda.is_available() else "cpu") # Select device to train on
 
 class REINFORCE():
-    def __init__(self, state_size, action_size, hidden_size, actor_lr, vf_lr, gamma, baseline, device):
+    def __init__(
+            self, state_size: int, action_size: int,
+            hidden_size: int, actor_lr: float, vf_lr: float, gamma:float,
+            baseline: bool, device: DeviceObjType, activation: str
+    ) -> None:
+        '''
+        Initialize the Policy and value network and their optimizers
+        '''
         self.action_size = action_size
-        self.policy = Policy(state_size, action_size, hidden_size).to(device)
-        self.vf = Value(state_size, hidden_size).to(device)
+        self.policy = Policy(state_size, action_size, hidden_size, activation).to(device)
+        self.vf = Value(state_size, hidden_size, activation).to(device)
         self.actor_optimizer = Adam(self.policy.parameters(), lr=actor_lr)
         self.vf_optimizer = Adam(self.vf.parameters(), lr=vf_lr)
         self.gamma = gamma
         self.device = device
         self.baseline = baseline
         
-    def select_action(self, state):
+    def select_action(self, state: ndarray) -> int:
+        '''
+        Select an action while keeping the policy fixed
+        '''
         with torch.no_grad():
             input_state = torch.FloatTensor(state).to(device)
             action_probs = self.policy(input_state)
@@ -34,35 +44,46 @@ class REINFORCE():
         
         return action
 
-    def train(self, state_list, action_list, reward_list):        
+    def train(self, state_list: list, action_list: list, reward_list: list) -> tuple[float, float]:        
+        '''
+        Update the policy and value(Only if baseline is true) networks by
+        using the entire episode trajectory
+        '''
         trajectory_len = len(reward_list)
         return_array = np.zeros((trajectory_len,))
         g_return = 0.0
 
+        # Get discounted returns
         for i in range(trajectory_len-1,-1,-1):
             g_return = reward_list[i] + self.gamma * g_return
             return_array[i] = g_return
-            
+
+        # Convert everything to torch tensor            
         state_t = torch.FloatTensor(state_list).to(device)
         action_t = torch.LongTensor(action_list).to(device).view(-1,1)
         return_t = torch.FloatTensor(return_array).to(device).view(-1,1)
 
+        # Value function forward pass
         vf_t = self.vf(state_t).to(device)
+        
+        # Calulate delta
         with torch.no_grad():
             delta_t = return_t - vf_t
         
-        # Policy loss
+        # Policy forward pass
         selected_action_prob = self.policy(state_t).gather(1, action_t)
         
+        # Policy loss
         if self.baseline:
             agent_loss = torch.mean(-torch.log(selected_action_prob) * delta_t)
         else:
             agent_loss = torch.mean(-torch.log(selected_action_prob) * return_t)            
+        
         self.actor_optimizer.zero_grad()
         agent_loss.backward()
         self.actor_optimizer.step() 
 
-        # calculate vf loss
+        # Value loss
         loss_fn = nn.MSELoss()
         vf_loss = loss_fn(vf_t, return_t)
         if self.baseline:
@@ -72,32 +93,25 @@ class REINFORCE():
         
         return agent_loss.item(), vf_loss.item()
 
-device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+def train(args: ArgumentParser, env:Env, baseline = True) -> list:
+    '''
+    Helper function to generate the comparision plots, by using rewards
+    from 5 independent runs.
+    '''
 
-env = build_env('Acrobot-v1')
-
-
-# episodes = 10000
-# hidden_size = 256 
-# actor_lr = 1e-3
-# value_function_lr = 1e-4 
-# gamma = 0.99 
-# reward_scale = 1 
-
-def train(args,env, baseline = True):
     action_size = env.action_space.n
     state_size = env.observation_space.shape[0]
-    agent = REINFORCE(state_size, action_size, args.hidden_size, args.lr_policy, args.lr_value, args.gamma, baseline, device)
+    agent = REINFORCE(state_size, action_size, args.hidden_size, args.lr_policy, args.lr_value, args.gamma, baseline, device, args.activation)
     total_reward = 0
     loop_obj = tqdm(range(args.episodes))
-    window = deque(maxlen=100)
+    window = deque(maxlen=100) # Moving average of 100 runs
     rewards = []
     for ep in loop_obj:
         state = env.reset()[0]
         state_list, action_list, reward_list = [], [], []
         
         total_reward = 0 
-        for _ in range(200):
+        for _ in range(args.max_time_steps):
         
             action = agent.select_action(state)
 
@@ -111,7 +125,7 @@ def train(args,env, baseline = True):
                 break
             state = next_state
         
-        actor_loss, vf_loss = agent.train(state_list, action_list, reward_list)
+        actor_loss, vf_loss = agent.train(state_list, action_list, reward_list) # Train the network
         rewards.append(total_reward)
         window.append(total_reward)
         loop_obj.set_postfix_str(f"Reward: {sum(window)/100}")   
@@ -119,6 +133,9 @@ def train(args,env, baseline = True):
     return rewards 
 
 def train_wb():
+    '''
+    Wandb hyperparameter search helper function
+    '''
     run = wandb.init() # Initialize the run
     config = wandb.config # Get the config
 
@@ -145,29 +162,33 @@ def train_wb():
 
 if __name__ =='__main__':
     parser = ArgumentParser()
-    parser.add_argument('--wandb_project', '-wp', default='RL-A2-REINFORCE', type=str, help="The wandb project name where run will be stored")
-    parser.add_argument('--wandb', '-wb', default=False, type=bool, help="Run WandB")
-    parser.add_argument('--gamma', '-g', default='0.99', type=float, help="Discount Factor")
-    parser.add_argument('--reward_scale', '-r', default='1', type=float, help="Reward Scale")
-    parser.add_argument('--lr_value', '-lrv', default='1e-4', type=float, help="Learning Rate of Value Network")
-    parser.add_argument('--lr_policy', '-lra', default='1e-3', type=float, help="Learning Rate of Policy Network")
-    parser.add_argument('--hidden_size', '-hs', default='256', type=int, help="Hidden Size")
-    parser.add_argument('--episodes', '-e', default='1000', type=int, help="Epsiodes")
+    parser.add_argument('--wandb_project', '-wp', default='RL-A2-REINFORCE-Acro', type=str, help="The wandb project name where run will be stored")
+    parser.add_argument('--wandb', '-wb', default=0, type=bool, help="Run WandB")
+    parser.add_argument('--gamma', '-g', default=0.99, type=float, help="Discount Factor")
+    parser.add_argument('--reward_scale', '-r', default=1., type=float, help="Reward Scale")
+    parser.add_argument('--lr_value', '-lrv', default=1e-4, type=float, help="Learning Rate of Value Network")
+    parser.add_argument('--lr_policy', '-lra', default=1e-3, type=float, help="Learning Rate of Policy Network")
+    parser.add_argument('--hidden_size', '-hs', default=256, type=int, help="Hidden Size")
+    parser.add_argument('--episodes', '-e', default=1000, type=int, help="Epsiodes")
+    parser.add_argument('--max_time_steps', '-mt', default=200, type=int, help="Max Time Steps in an Episode")
+    parser.add_argument('--environment', '-env', default=0, type=int, help="Select the environment 0: CartPole-v1, 1: Acrobot-v2")
+    parser.add_argument('--fig_name', '-fn', default='abc', type=str, help='Saving name of the plot.')
+    parser.add_argument('--activation', '-act', default='ReLU', type=str, help="Activation function used in the model")
     args = parser.parse_args()
 
-
-    env = build_env('CartPole-v1')
+    
+    env = build_env('Acrobot-v1' if args.environment else 'CartPole-v1') # Build environment
 
     if args.wandb == False:
-        num_expts = 5
+        num_expts = 5 
         episodic_rewards_list = []
         episodic_rewards_list_Baseline = []
         for i in range(num_expts):
             print(f"Experiment {i+1}")
             episodic_rewards = train(args,env,baseline = False)
-            episodic_rewards_list.append(episodic_rewards)
+            episodic_rewards_list.append(episodic_rewards[::10])
             episodic_rewards = train(args,env,baseline = True)
-            episodic_rewards_list_Baseline.append(episodic_rewards)
+            episodic_rewards_list_Baseline.append(episodic_rewards[::10])
         episodic_rewards_avg = np.mean(np.array(episodic_rewards_list), axis=0)
         episodic_rewards_std = np.std(np.array(episodic_rewards_list), axis=0)
         episodic_rewards_baseline_avg = np.mean(np.array(episodic_rewards_list_Baseline), axis=0)
@@ -180,14 +201,14 @@ if __name__ =='__main__':
         plt.legend()
         plt.xlabel('Episode')
         plt.ylabel('Episodic rewards')
-        plt.show()
+        plt.savefig(args.fig_name)
     else:
         wandb.login(key="ffbdeb8b8eb61fe76925bb00113546a4c1d0581e")
         with open("./sweep_reinforce.yml", "r") as f:
             sweep_config = yaml.safe_load(f)
 
         sweep_id = wandb.sweep(sweep_config, project=args.wandb_project)
-        sweep_agent = wandb.agent(sweep_id, function=train_wb)
+        sweep_agent = wandb.agent(sweep_id, function=train_wb, count=100)
         pass
 
 
