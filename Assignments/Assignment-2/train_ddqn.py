@@ -157,7 +157,7 @@ def train_wb():
 if __name__ == '__main__':
     parser = ArgumentParser()
     parser.add_argument('--wandb_project', '-wp', default='Shivanshu', type=str, help="The wandb project name where run will be stored")
-    parser.add_argument('--wandb', '-wb', default=False, type=bool, help="Run WandB")
+    parser.add_argument('--wandb', '-wb', default=0, type=bool, help="Run WandB")
     parser.add_argument('--learning_rate', '-lr', default=1e-3, type=float, help='Learning rate for the Q network')
     parser.add_argument('--gamma', '-g', default=0.99, type=float, help="Discount Factor")
     parser.add_argument('--explore', '-ex', default=20000, type=int, help="Exploration Steps")
@@ -203,7 +203,7 @@ if __name__ == '__main__':
         plt.ylabel('Episodic rewards')
         plt.savefig(args.fig_name + '.png')
     else:
-        wandb.login(key="ffbdeb8b8eb61fe76925bb00113546a4c1d0581e")
+        wandb.login(key="")
         with open("./abc.yml", "r") as f:
             sweep_config = yaml.safe_load(f)
 

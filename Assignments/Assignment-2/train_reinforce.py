@@ -208,7 +208,7 @@ if __name__ =='__main__':
         plt.ylabel('Episodic rewards')
         plt.savefig(args.fig_name)
     else:
-        wandb.login(key="ffbdeb8b8eb61fe76925bb00113546a4c1d0581e")
+        wandb.login(key="")
         with open("./sweep_reinforce.yml", "r") as f:
             sweep_config = yaml.safe_load(f)
 
