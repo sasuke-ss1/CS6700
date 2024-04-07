@@ -23,6 +23,3 @@ One can change the hyperparameters using python command line arguments. The list
 python <filename.py> --help
 ```
 
-Note: To run personalized episodes set ```sh -b 0```. 
-
-
