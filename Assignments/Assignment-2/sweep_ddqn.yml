@@ -35,3 +35,5 @@ parameters:
       values: [Tanh, Sigmoid, ReLU]
     learning_rate:
       values: [0.0001, 0.0005, 0.001]
+    shuffle:
+      values: [True, False]

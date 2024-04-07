@@ -29,6 +29,7 @@ def train(args: ArgumentParser, env: Env, use_max = None) -> list:
     epochs = args.epochs
     max_timesteps = args.max_time_steps
     warm_up_steps = args.warm_up_steps
+    shuffle = args.shuffle
     if use_max != None:
         use_max = use_max
     else:
@@ -92,7 +93,7 @@ def train(args: ArgumentParser, env: Env, use_max = None) -> list:
                 targetQNet.load_state_dict(QNet.state_dict()) # Copy the policy Q network params to target Q network
 
             # Update the policy Q network
-            batch_samples = memory.sample(batch_size, False)
+            batch_samples = memory.sample(batch_size, shuffle)
             batch_state, batch_action, batch_next_state, batch_reward, batch_done =  zip(*batch_samples)
 
             batch_state = torch.tensor(batch_state, dtype=torch.float32).to(device)
@@ -155,7 +156,7 @@ def train_wb():
 
 if __name__ == '__main__':
     parser = ArgumentParser()
-    parser.add_argument('--wandb_project', '-wp', default='RL-A2-DDQN-Acrobot', type=str, help="The wandb project name where run will be stored")
+    parser.add_argument('--wandb_project', '-wp', default='Shivanshu', type=str, help="The wandb project name where run will be stored")
     parser.add_argument('--wandb', '-wb', default=False, type=bool, help="Run WandB")
     parser.add_argument('--learning_rate', '-lr', default=1e-3, type=float, help='Learning rate for the Q network')
     parser.add_argument('--gamma', '-g', default=0.99, type=float, help="Discount Factor")
@@ -166,13 +167,14 @@ if __name__ == '__main__':
     parser.add_argument('--batch_size', '-b', default=16, type=int, help="Batch Size")
     parser.add_argument('--target_update_freq', '-t', default=4, type=int, help="Target Update Frequency")
     parser.add_argument('--epochs', '-e', default=1000, type=int, help="Epochs")
-    parser.add_argument('--max_time_steps', '-mt', default=200, type=int, help="Max Time Steps in an Episode")
+    parser.add_argument('--max_time_steps', '-mt', default=500, type=int, help="Max Time Steps in an Episode")
     parser.add_argument('--warm_up_steps', '-wu', default=250, type=int, help="Warm up steps")
     parser.add_argument('--use_max', '-um', default=False, type=bool, help="Warm up steps")
     parser.add_argument('--hidden_size1', '-h1', default=64, type=int, help="Hidden Size 1")
     parser.add_argument('--hidden_size2', '-h2', default=256, type=int, help="Hidden Size 2")
     parser.add_argument('--environment', '-env', default=0, type=int, help="Select the environment 0: CartPole-v1, 1: Acrobot-v2")
     parser.add_argument('--fig_name', '-fn', default='abc', type=str, help='Saving name of the plot.')
+    parser.add_argument('--shuffle', '-sf', default=0, type=bool, help='Saving name of the plot.')
     parser.add_argument('--activation', '-act', default='ReLU', type=str, help="Activation function used in the model")
     args = parser.parse_args()
         
@@ -202,7 +204,7 @@ if __name__ == '__main__':
         plt.savefig(args.fig_name + '.png')
     else:
         wandb.login(key="ffbdeb8b8eb61fe76925bb00113546a4c1d0581e")
-        with open("./sweep_DDQN.yml", "r") as f:
+        with open("./abc.yml", "r") as f:
             sweep_config = yaml.safe_load(f)
 
         sweep_id = wandb.sweep(sweep_config, project=args.wandb_project)

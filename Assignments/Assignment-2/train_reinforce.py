@@ -91,7 +91,6 @@ class REINFORCE():
         if self.baseline:
             self.vf_optimizer.zero_grad()
             vf_loss.backward()
-            torch.nn.utils.clip_grad_norm_(self.policy.parameters(), 0.1)
             self.vf_optimizer.step() 
         
         return agent_loss.item(), vf_loss.item()
@@ -221,5 +220,4 @@ if __name__ =='__main__':
 
 
     
-
 
