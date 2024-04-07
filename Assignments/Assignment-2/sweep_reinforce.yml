@@ -19,3 +19,5 @@ parameters:
       values: [500]
     baseline:
       values: [True, False]
+    activation:
+      values: [Tanh, Sigmoid, ReLU]

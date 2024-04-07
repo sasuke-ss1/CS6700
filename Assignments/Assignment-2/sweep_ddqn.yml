@@ -31,3 +31,7 @@ parameters:
       values: [32,64,128,256]
     hidden_size2:
       values: [32,64,128,256]
+    activation:
+      values: [Tanh, Sigmoid, ReLU]
+    learning_rate:
+      values: [0.0001, 0.0005, 0.001]

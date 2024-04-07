@@ -76,3 +76,5 @@ class Value(nn.Module):
         x = self.act(self.fc2(x))
        
         return self.out(x)
+    
+    

@@ -91,7 +91,7 @@ def train(args: ArgumentParser, env: Env, use_max = None) -> list:
             if steps % target_update_freq == 0:
                 targetQNet.load_state_dict(QNet.state_dict()) # Copy the policy Q network params to target Q network
 
-            # Update the policy  Q network
+            # Update the policy Q network
             batch_samples = memory.sample(batch_size, False)
             batch_state, batch_action, batch_next_state, batch_reward, batch_done =  zip(*batch_samples)
 

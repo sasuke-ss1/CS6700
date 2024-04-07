@@ -1,5 +1,6 @@
+import torch.nn.grad
 from utils import *
-seed_everything(0) #Seed everything apart from the environment
+seed_everything(42) #Seed everything apart from the environment
 from tqdm import tqdm
 from numpy import ndarray
 from model import *
@@ -11,7 +12,7 @@ import wandb
 import yaml
 from torch import DeviceObjType
 
-device = torch.device("cuda" if torch.cuda.is_available() else "cpu") # Select device to train on
+device = torch.device("cpu" if torch.cuda.is_available() else "cpu") # Select device to train on
 
 class REINFORCE():
     def __init__(
@@ -81,14 +82,16 @@ class REINFORCE():
         
         self.actor_optimizer.zero_grad()
         agent_loss.backward()
+        torch.nn.utils.clip_grad_norm_(self.policy.parameters(), 1)
         self.actor_optimizer.step() 
-
+        
         # Value loss
         loss_fn = nn.MSELoss()
         vf_loss = loss_fn(vf_t, return_t)
         if self.baseline:
             self.vf_optimizer.zero_grad()
             vf_loss.backward()
+            torch.nn.utils.clip_grad_norm_(self.policy.parameters(), 0.1)
             self.vf_optimizer.step() 
         
         return agent_loss.item(), vf_loss.item()
@@ -121,9 +124,11 @@ def train(args: ArgumentParser, env:Env, baseline = True) -> list:
             state_list.append(state)
             action_list.append(action)
             reward_list.append(reward*args.reward_scale)
+            
+            state = next_state
             if done:
                 break
-            state = next_state
+            
         
         actor_loss, vf_loss = agent.train(state_list, action_list, reward_list) # Train the network
         rewards.append(total_reward)
@@ -165,12 +170,12 @@ if __name__ =='__main__':
     parser.add_argument('--wandb_project', '-wp', default='RL-A2-REINFORCE-Acro', type=str, help="The wandb project name where run will be stored")
     parser.add_argument('--wandb', '-wb', default=0, type=bool, help="Run WandB")
     parser.add_argument('--gamma', '-g', default=0.99, type=float, help="Discount Factor")
-    parser.add_argument('--reward_scale', '-r', default=1., type=float, help="Reward Scale")
-    parser.add_argument('--lr_value', '-lrv', default=1e-4, type=float, help="Learning Rate of Value Network")
+    parser.add_argument('--reward_scale', '-r', default=0.5, type=float, help="Reward Scale")
+    parser.add_argument('--lr_value', '-lrv', default=1e-3, type=float, help="Learning Rate of Value Network")
     parser.add_argument('--lr_policy', '-lra', default=1e-3, type=float, help="Learning Rate of Policy Network")
     parser.add_argument('--hidden_size', '-hs', default=256, type=int, help="Hidden Size")
     parser.add_argument('--episodes', '-e', default=1000, type=int, help="Epsiodes")
-    parser.add_argument('--max_time_steps', '-mt', default=200, type=int, help="Max Time Steps in an Episode")
+    parser.add_argument('--max_time_steps', '-mt', default=500, type=int, help="Max Time Steps in an Episode")
     parser.add_argument('--environment', '-env', default=0, type=int, help="Select the environment 0: CartPole-v1, 1: Acrobot-v2")
     parser.add_argument('--fig_name', '-fn', default='abc', type=str, help='Saving name of the plot.')
     parser.add_argument('--activation', '-act', default='ReLU', type=str, help="Activation function used in the model")
@@ -194,11 +199,12 @@ if __name__ =='__main__':
         episodic_rewards_baseline_avg = np.mean(np.array(episodic_rewards_list_Baseline), axis=0)
         episodic_rewards_baseline_std = np.std(np.array(episodic_rewards_list_Baseline), axis=0)
         plt.figure(figsize = (10,7))
-        plt.plot(episodic_rewards_avg, label = 'w/o Baseline')
+        plt.plot(episodic_rewards_avg, label = 'w/o Baseline', color='blue')
         plt.fill_between(range(len(episodic_rewards_avg)),episodic_rewards_avg - episodic_rewards_std,episodic_rewards_avg + episodic_rewards_std, color='lightblue', alpha=0.5, label='Mean ± Std Dev')
-        plt.plot(episodic_rewards_baseline_avg, label = 'Baseline')
-        plt.fill_between(range(len(episodic_rewards_baseline_avg)),episodic_rewards_baseline_avg - episodic_rewards_baseline_std,episodic_rewards_baseline_avg + episodic_rewards_baseline_std, color='orange', alpha=0.5, label='Mean ± Std Dev')
+        plt.plot(episodic_rewards_baseline_avg, label = 'Baseline', color = 'red')
+        plt.fill_between(range(len(episodic_rewards_baseline_avg)),episodic_rewards_baseline_avg - episodic_rewards_baseline_std,episodic_rewards_baseline_avg + episodic_rewards_baseline_std, color='lightcoral', alpha=0.5, label='Mean ± Std Dev')
         plt.legend()
+        plt.title('Acrobot-v1' if args.environment else 'CartPole-v1')
         plt.xlabel('Episode')
         plt.ylabel('Episodic rewards')
         plt.savefig(args.fig_name)
