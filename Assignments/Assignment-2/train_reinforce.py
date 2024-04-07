@@ -214,7 +214,7 @@ if __name__ =='__main__':
 
         sweep_id = wandb.sweep(sweep_config, project=args.wandb_project)
         sweep_agent = wandb.agent(sweep_id, function=train_wb, count=100)
-        pass
+        
 
 
 
