@@ -18,7 +18,7 @@ parameters:
     batch_size:
       values: [16]
     target_update_freq:
-      values: [16]
+      values: [4, 16, 64]
     epochs:
       values: [500]
     max_time_steps:
