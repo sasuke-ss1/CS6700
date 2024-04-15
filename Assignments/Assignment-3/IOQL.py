@@ -18,9 +18,8 @@ env = build_env('Taxi-v3')
 opt = Option(env)
 cnt = 0
 nO = 4
-
-q_values_SMDP = np.zeros((env.observation_space.n,nO))
-updates_SMDP = np.zeros((env.observation_space.n,nO))
+q_values_IOQL = np.zeros((env.observation_space.n, nO))
+update_IOQL = np.zeros((env.observation_space.n, nO))
 
 rewards = deque(maxlen=100)
 loop_obj = tqdm(range(Neps))
@@ -32,25 +31,15 @@ for i in loop_obj:
     total_rewards = 0
     while not done:
         x, y, p, d = env.decode(state)
-        option = policy(q_values_SMDP, state)
+        
+        option = policy(q_values_IOQL, state)
         eps = max(eps_min, eps_decay * eps)
 
-        reward_bar = 0
         optDone = False
-        move = 0
         prev = state
 
-        state, reward_bar, move, total_rewards, done = opt(state, done, option, gamma, alpha, eps_min, eps_decay)
+        state, total_rewards, done = opt.IOQL(state, done, option, q_values_IOQL, update_IOQL, gamma, alpha, eps_min, eps_decay)
             
-        _, _, p, d = env.decode(state)
-        
-        _, _, p, d = env.decode(prev)
-    
-
-        q_values_SMDP[prev, option] += alpha*(reward_bar + (gamma**move)*np.max(q_values_SMDP[state, :]) - q_values_SMDP[prev, option])
-        updates_SMDP[prev, option] += 1
-
-        x, y, p, d = env.decode(state)
 
     rewards.append(total_rewards)
     loop_obj.set_postfix_str(f'Rewards: {sum(rewards)/len(rewards)}')
