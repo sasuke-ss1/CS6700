@@ -13,7 +13,7 @@ policy = EGreedyPolicy(eps, seed)
 policies = {i: EGreedyPolicy(eps, seed) for i in range(4)}
 gamma = 0.9
 alpha = 0.1
-Neps = 5000
+Neps = 10000
 env = build_env('Taxi-v3')
 opt = Option(env)
 cnt = 0
@@ -38,9 +38,10 @@ for i in loop_obj:
         optDone = False
         prev = state
 
-        state, total_rewards, done = opt.IOQL(state, done, option, q_values_IOQL, update_IOQL, gamma, alpha, eps_min, eps_decay)
-            
+        state, opt_total_rewards, done = opt.IOQL(state, done, option, q_values_IOQL, update_IOQL, gamma, alpha, eps_min, eps_decay)
+        total_rewards += opt_total_rewards
 
     rewards.append(total_rewards)
     loop_obj.set_postfix_str(f'Rewards: {sum(rewards)/len(rewards)}')
         
+plot_q_values_best_actions(env, q_values_IOQL)

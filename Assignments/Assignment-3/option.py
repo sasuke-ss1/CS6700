@@ -12,7 +12,7 @@ class Option():
             3: (4, 3)
         }
         self.Q = {
-            i: np.zeros((env.observation_space.n, env.action_space.n)) for i in range(num_options)
+            i: np.zeros((env.observation_space.n//20, env.action_space.n)) for i in range(num_options)
         }
 
         self.policies = {
@@ -60,8 +60,12 @@ class Option():
             reward_bar = gamma * reward_bar + reward
             steps += 1
             total_rewards += reward
-        
-            self.Q[optNum][encode_state(x, y), optAct] += alpha*(reward + gamma * np.max(self.Q[optNum][encode_state(x1, y1), :]) - self.Q[optNum][encode_state(x, y), optAct])    
+            reward_surr = reward
+            if optDone:
+                reward_surr = 10
+
+
+            self.Q[optNum][encode_state(x, y), optAct] += alpha*(reward_surr + gamma * np.max(self.Q[optNum][encode_state(x1, y1), :]) - self.Q[optNum][encode_state(x, y), optAct])    
             state = next_state
 
         return state, reward_bar, steps, total_rewards, done
@@ -81,8 +85,10 @@ class Option():
             pol.change_params(max(params_min, params_decay * curr_param))
 
             total_rewards += reward
-
-            self.Q[optNum][encode_state(x, y), optAct] += alpha*(reward + gamma * np.max(self.Q[optNum][encode_state(x1, y1), :]) - self.Q[optNum][encode_state(x, y), optAct])    
+            reward_surr = reward
+            if optDone:
+                reward_surr = 10
+            self.Q[optNum][encode_state(x, y), optAct] += alpha*(reward_surr + gamma * np.max(self.Q[optNum][encode_state(x1, y1), :]) - self.Q[optNum][encode_state(x, y), optAct])    
 
             for i in range(len(self.policies)):
                 tmp_act, tmp_done = self.forward(state, i, self.policies[i])

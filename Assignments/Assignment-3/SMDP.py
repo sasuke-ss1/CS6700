@@ -40,8 +40,8 @@ for i in loop_obj:
         move = 0
         prev = state
 
-        state, reward_bar, move, total_rewards, done = opt(state, done, option, gamma, alpha, eps_min, eps_decay)
-            
+        state, reward_bar, move, opt_total_rewards, done = opt(state, done, option, gamma, alpha, eps_min, eps_decay)
+        total_rewards += opt_total_rewards    
         _, _, p, d = env.decode(state)
         
         _, _, p, d = env.decode(prev)
@@ -54,4 +54,5 @@ for i in loop_obj:
 
     rewards.append(total_rewards)
     loop_obj.set_postfix_str(f'Rewards: {sum(rewards)/len(rewards)}')
-        
+
+plot_q_values_best_actions(env, q_values_SMDP)
