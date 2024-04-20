@@ -57,7 +57,7 @@ def plot_q_values_best_actions(env, q_values, name, p, d, actions_list=['R', 'G'
     plt.savefig(name)
 
 
-def plot_reward_curves(rewards1, title, xlabel, ylabel, legend, name,rewards2=None, stepsize=5):
+def plot_reward_curves(rewards1, title, xlabel, ylabel, legend, name,rewards2=None, stepsize=20):
     plt.figure(figsize=(10 ,7))
     plt.plot(range(len(rewards1[::stepsize])), rewards1[::stepsize])
     if rewards2:

@@ -10,7 +10,6 @@ eps_min = 0.01
 eps_decay = 0.99
 eps = 0.1
 policy = EGreedyPolicy(eps, seed)
-policies = {i: EGreedyPolicy(eps, seed) for i in range(4)}
 gamma = 0.9
 alpha = 0.1
 Neps = 5000

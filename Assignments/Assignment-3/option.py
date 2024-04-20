@@ -102,7 +102,7 @@ class Option():
             Q_IOQL[state, optNum] += alpha * (reward - Q_IOQL[state, optNum] + gamma * (np.max(Q_IOQL[next_state, :])))
             freq_IOQL[state, optNum] += 1
             
-            state =next_state
+            state = next_state
  
             return state, total_rewards, steps, done
 
@@ -182,7 +182,7 @@ class Option():
         plt.savefig(name)
 
 class Option2():
-    def __init__(self, env: Env, num_options=4, policy='egreedy', params=0.1, seed=42):
+    def __init__(self, env: Env, num_options=2, policy='egreedy', params=0.1, seed=42):
         self.env = env
         self.goal = {
             0: (0, 0),
@@ -192,12 +192,9 @@ class Option2():
         }
 
         self.goal_name = {
-            0: 'R',
-            1: 'G',
-            2: 'Y',
-            3: 'B'
+            0: 'L',
+            1: 'D',
         }
-
 
         self.revGoal = dict(zip(self.goal.values(), self.goal.keys()))
 
@@ -250,6 +247,9 @@ class Option2():
             if optDone and optNum == 0 and optAct == 4:
                 reward_surr = 20
 
+            if optNum == 1 and optDone and optAct == 5:
+                reward_surr = 20
+
             if optNum == 0 and optAct == 5:
                 reward_surr = -20
                 optDone = True
@@ -257,22 +257,66 @@ class Option2():
             if optNum == 1 and optAct == 4:
                 reward_surr = -20
                 optDone = True
-            
-            if optNum == 1 and optDone and optAct == 5:
-                reward_surr = 20
 
             self.Q[optNum][state, optAct] += alpha*(reward_surr + gamma * np.max(self.Q[optNum][next_state, :]) - self.Q[optNum][state, optAct])    
             state = next_state
             
         return state, reward_bar, steps, total_rewards, done
     
+    def IOQL(self, state, done, optNum, Q_IOQL, freq_IOQL, gamma, alpha, params_min, params_decay):
+        total_rewards = 0
+        optDone = False
+        steps = 0
+
+        while not done and not optDone:
+            steps += 1
+            optAct, optDone = self.forward(state, optNum, self.policies[optNum])
+            next_state, reward, done, _, _ = self.env.step(optAct)
+
+            pol = self.policies[optNum]
+            curr_param = pol.params
+            pol.change_params(max(params_min, params_decay * curr_param))
+
+            total_rewards += reward
+            reward_surr = reward
+
+            if optDone and optNum == 0 and optAct == 4:
+                reward_surr = 20
+
+            if optNum == 1 and optDone and optAct == 5:
+                reward_surr = 20
+
+            if optNum == 0 and optAct == 5:
+                reward_surr = -20
+                optDone = True
+
+            if optNum == 1 and optAct == 4:
+                reward_surr = -20
+                optDone = True
+        
+            self.Q[optNum][state, optAct] += alpha*(reward_surr + gamma * np.max(self.Q[optNum][next_state, :]) - self.Q[optNum][state, optAct])    
+
+            for i in range(len(self.policies)):
+                tmp_act, tmp_done = self.forward(state, i, self.policies[i])
+                if tmp_act == optAct:
+                    if optNum == 1 and optAct == 4:
+                        tmp_done = True
+                    if optNum == 0 and optAct == 5:
+                        tmp_done = True
+
+                    Q_IOQL[state, i] += alpha * (reward - Q_IOQL[state, i] + gamma * (tmp_done * np.max(Q_IOQL[next_state, :]) + (1- tmp_done) * Q_IOQL[next_state, i]))
+                    freq_IOQL[state, i] += 1
+
+            state = next_state
+
+        return state, total_rewards, steps, done
+
     def plot_intra_option_q_table(self, p, d, name):
-        fig, axs = plt.subplots(2, 2)
-        fig.set_figheight(15)
-        fig.set_figwidth(20)
+        fig, axs = plt.subplots(1, 2)
+        fig.set_figheight(10)
+        fig.set_figwidth(15)
 
         for i in range(len(self.Q)):
-            fig_row = i // 2 
             fig_col = i % 2
             q_values = self.Q[i]
             best_actions = np.zeros((5,5), dtype=int)
@@ -296,15 +340,15 @@ class Option2():
                     else:
                         color = 'lightsteelblue' 
                     rect = plt.Rectangle((col-0.5, 4-row-0.5), 1, 1, fill=True, color = color, alpha=0.6)
-                    axs[fig_row,fig_col].add_patch(rect)
+                    axs[fig_col].add_patch(rect)
                     action = best_actions[row, col]
-                    axs[fig_row,fig_col].text(col, 5 - row - 1, action_label, ha='center', va='center', fontsize=20, color='black')
-            axs[fig_row,fig_col].axis(xmin=-0.5,xmax=4.5)
-            axs[fig_row,fig_col].axis(ymin=-0.5,ymax=4.5)
-            axs[fig_row, fig_col].set_xticks([])
-            axs[fig_row, fig_col].set_yticks([])  
-            axs[fig_row,fig_col].grid(True)
-            axs[fig_row,fig_col].set_title(f'Option {self.goal_name[i]} - Go to {self.goal[i]}')
+                    axs[fig_col].text(col, 5 - row - 1, action_label, ha='center', va='center', fontsize=20, color='black')
+            axs[fig_col].axis(xmin=-0.5,xmax=4.5)
+            axs[fig_col].axis(ymin=-0.5,ymax=4.5)
+            axs[fig_col].set_xticks([])
+            axs[fig_col].set_yticks([])  
+            axs[fig_col].grid(True)
+            axs[fig_col].set_title(f'Option {self.goal_name[i]} - Go to {self.goal[i]}')
     
         legend_elements = [plt.Line2D([0], [0], marker='o', color='w', label=action_symbol + ' - ' + action_meaning,
                                  markersize=10) for action_symbol, action_meaning in zip(action_symbols, action_meanings)]
