@@ -1,3 +1,8 @@
+'''
+Generates comparison plots accross all the methods and options.
+'''
+
+
 from utils import *
 from policy import *
 from option import *
@@ -128,7 +133,6 @@ def SMDP2():
                 eps = max(eps_min, eps_decay * eps)
 
                 reward_bar = 0
-                optDone = False
                 move = 0
                 prev = state
 
@@ -179,10 +183,10 @@ def IOQL2():
                 option = policy(q_values_IOQL, state)
                 eps = max(eps_min, eps_decay * eps)
 
-                optDone = False
                 state, opt_total_rewards, steps, done = opt.IOQL(state, done, option, q_values_IOQL, update_IOQL, gamma, alpha, eps_min, eps_decay)
                 total_rewards += opt_total_rewards
                 total_steps += steps
+
                 if total_steps > 200:
                     break
 

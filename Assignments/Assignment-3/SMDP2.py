@@ -3,19 +3,32 @@ from policy import *
 from option import *
 from collections import deque
 from tqdm import tqdm
-seed = 42
+from argparse import ArgumentParser
+seed = 42 
+seed_everything(seed) # Seeds every RNG
 
-seed_everything(seed)
-eps_min = 0.01
-eps_decay = 0.99
-eps = 0.1
-policy = EGreedyPolicy(eps, seed)
+parser = ArgumentParser()
+parser.add_argument('--p_min', '-pm', default=0.01, type=float, help='The minimum value of the policy parameter')
+parser.add_argument('--p_decay', '-pd', default=0.99, type=float, help='The decay rate of the policy parameter')
+parser.add_argument('--p', '-p', default=0.1, type=float, help='The parameter of the policy')
+parser.add_argument('--alpha', '-a', default=0.1, type=float, help='Learning rate for the policy')
+parser.add_argument('--num_episodes', '-neps', default=2000, type=int, help='Total number of episodes to run')
+parser.add_argument('--steps_per_episode', '-spe', default=200, type=int, help='Maximum number of steps per episode')
+parser.add_argument('--pick', '-pick', default=0, type=int, help='Pickup location for plotting')
+parser.add_argument('--drop', '-drop', default=1, type=int, help='Drop location for plotting')
+parser.add_argument('--policy', '-policy', default='egreedy', type=str, help='Policy for agent')
+args = parser.parse_args()
+
+# Initialize everything
+eps_min = args.p_min
+eps_decay = args.p_decay
+eps = args.p
+policy = EGreedyPolicy(eps, seed) if args.policy == 'egreedy' else SoftmaxPolicy(eps, seed) 
 gamma = 0.9
-alpha = 0.1
-Neps = 2000
+alpha = args.alpha
+Neps = args.num_episodes
 env = build_env('Taxi-v3')
-opt = Option2(env)
-cnt = 0
+opt = Option2(env, policy=args.policy, params=eps)
 nO = 2
 
 q_values_SMDP = np.zeros((env.observation_space.n,nO))
@@ -31,32 +44,27 @@ for i in loop_obj:
     total_steps, total_rewards = 0, 0
 
     while not done:
-        x, y, p, d = env.decode(state)
-        option = policy(q_values_SMDP, state)
-        eps = max(eps_min, eps_decay * eps)
+        option = policy(q_values_SMDP, state) # Select option
+        eps = max(eps_min, eps_decay * eps) # Update the policy parameter
 
-        reward_bar = 0
-        optDone = False
-        move = 0
-        prev = state
+        prev = state # Save current State
 
-        state, reward_bar, move, opt_total_rewards, done = opt(state, done, option, gamma, alpha, eps_min, eps_decay)
+        state, reward_bar, move, opt_total_rewards, done = opt(state, done, option, gamma, alpha, eps_min, eps_decay) # Execute the option
         total_rewards += opt_total_rewards    
-        x, y, p, d = env.decode(state)
-        
-        x1, y1, p, d = env.decode(prev)
-
+      
+        # Update the Q Table
         q_values_SMDP[prev, option] += alpha*(reward_bar + (gamma**move)*np.max(q_values_SMDP[state, :]) - q_values_SMDP[prev, option])
         updates_SMDP[prev, option] += 1
         total_steps += move
 
-        if total_steps > 200:
+        if total_steps > args.steps_per_episode:
             break
 
     rewards.append(total_rewards)
     plot_rewards.append(total_rewards)
     loop_obj.set_postfix_str(f'Rewards: {sum(rewards)/len(rewards)}')
 
-opt.plot_intra_option_q_table(4, 1, 'SMDP_option_Q2')
-plot_q_values_best_actions(env, q_values_SMDP, 'SMDP_Q2', 4, 1, ['L', 'D'])
+# Plot everything
+opt.plot_intra_option_q_table(args.pick, args.drop, f'SMDP_option_Q2_{args.pick}_{args.drop}')
+plot_q_values_best_actions(env, q_values_SMDP, f'SMDP_Q2_{args.pick}_{args.drop}', args.pick, args.drop, ['L', 'D'])
 plot_reward_curves(plot_rewards, 'SMDP', 'Episodes', 'Rewards', ['smdp2_agent'], 'SMDP_rewards_2')

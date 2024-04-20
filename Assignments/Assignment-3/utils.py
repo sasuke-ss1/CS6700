@@ -1,6 +1,7 @@
 import numpy as np
 import gymnasium as gym
 from gymnasium import Env
+from numpy import ndarray
 import torch
 import random
 import matplotlib.pyplot as plt
@@ -19,17 +20,26 @@ def build_env(name: str, render_mode=None) -> Env:
     '''
     return gym.make(name, render_mode=render_mode)
 
-def decode_state(state):
+def decode_state(state: int) -> tuple[int, int, int, int]:
+    '''
+    Decode state to current location (x, y) values and the pickup and drop location (p, d)
+    '''
     picDrop, pos = state % 20, state // 20
     x, y = pos % 5, pos // 5
     drop, passenger = picDrop % 4, picDrop //4
     
     return x, y, drop, passenger
 
-def encode_state(x, y, mul=5):
+def encode_state(x:int, y:int, mul=5) -> int:
+    '''
+    Encodes (x, y) value to state
+    '''
     return mul * x + y
 
-def plot_q_values_best_actions(env, q_values, name, p, d, actions_list=['R', 'G', 'Y', 'B', 'P', 'X']):
+def plot_q_values_best_actions(env: Env, q_values: ndarray, name: str, p: int, d: int, actions_list=['R', 'G', 'Y', 'B', 'P', 'X']) -> None:
+    '''
+    Plots the best action for each state giving a particular (p, d)
+    '''
     best_actions = np.zeros((5,5))
     placeholder_p = p
     placeholder_d = d
@@ -57,7 +67,10 @@ def plot_q_values_best_actions(env, q_values, name, p, d, actions_list=['R', 'G'
     plt.savefig(name)
 
 
-def plot_reward_curves(rewards1, title, xlabel, ylabel, legend, name,rewards2=None, stepsize=20):
+def plot_reward_curves(rewards1: list, title: str, xlabel: str, ylabel: str, legend: list, name: str, rewards2=None, stepsize=20) -> None:
+    '''
+    Plots the reward curves by sampling the rewards at a particular stepsize
+    '''
     plt.figure(figsize=(10 ,7))
     plt.plot(range(len(rewards1[::stepsize])), rewards1[::stepsize])
     if rewards2:

@@ -4,6 +4,9 @@ from policy import *
 
 class Option():
     def __init__(self, env: Env, num_options=4, policy='egreedy', params=0.1, seed=42):
+        '''
+        Initalize the option
+        '''
         self.env = env
         self.goal = {
             0: (0, 0),
@@ -32,12 +35,10 @@ class Option():
         optDone = False
         x, y, p, d = self.env.decode(state)
 
+        # If option is done then exit, else select action according to policy
         if (x, y) == self.goal[optNum]:
             optDone = True
-            #if p == optNum:
-            #    optAct = 4
-            #elif d == optNum:
-            #    optAct = 5
+            # If optDone is true then optAct should result in the same state
             if optNum in [0, 1]:
                 optAct = 1
             else:
@@ -52,7 +53,8 @@ class Option():
         reward_bar, total_rewards = 0, 0
         steps = 0
         optDone = False
-        
+
+        # If option is pickup or drop then return after one step else execute the complete option        
         if optNum >= 4:
             next_state, reward, done,_, _ = self.env.step(optNum)
             steps += 1
@@ -63,12 +65,13 @@ class Option():
             return state, reward_bar, steps, total_rewards, done
 
         while not optDone and not done:
-            optAct, optDone = self.forward(state, optNum, self.policies[optNum])
-            next_state, reward, done,_, _ = self.env.step(optAct)
+            optAct, optDone = self.forward(state, optNum, self.policies[optNum]) # Get action
+            next_state, reward, done,_, _ = self.env.step(optAct) # Execute action
 
             x, y, _, _ = self.env.decode(state)
             x1, y1, _, _ = self.env.decode(next_state)
             
+            # Update policy parameters
             pol = self.policies[optNum]
             curr_param = pol.params
             pol.change_params(max(params_min, params_decay * curr_param))
@@ -78,15 +81,13 @@ class Option():
             total_rewards += reward
             reward_surr = reward
 
+            # If the option is completed sucessfully give a positive reward
             if optDone:
                 reward_surr = 20
 
-            self.Q[optNum][encode_state(x, y), optAct] += alpha*(reward_surr + gamma * np.max(self.Q[optNum][encode_state(x1, y1), :]) - self.Q[optNum][encode_state(x, y), optAct])    
+            # Update option
+            self.Q[optNum][encode_state(x, y), optAct] += alpha*(reward_surr + gamma * np.max(self.Q[optNum][encode_state(x1, y1), :]) - self.Q[optNum][encode_state(x, y), optAct]) 
             state = next_state
-
-            if steps > 200:
-                done=True
-                optDone=True
 
         return state, reward_bar, steps, total_rewards, done
     
@@ -94,6 +95,8 @@ class Option():
         total_rewards = 0
         optDone = False
         steps = 0
+
+        # If option is pickup or drop then return after one step else execute the complete option        
         if optNum >= 4:
             next_state, reward, done,_, _ = self.env.step(optNum)
             total_rewards += reward
@@ -108,22 +111,29 @@ class Option():
 
         while not done and not optDone:
             steps += 1
-            optAct, optDone = self.forward(state, optNum, self.policies[optNum])
-            next_state, reward, done, _, _ = self.env.step(optAct)
+            optAct, optDone = self.forward(state, optNum, self.policies[optNum]) # Get action
+            next_state, reward, done, _, _ = self.env.step(optAct) # Execute action
 
             x, y, _, _ =  self.env.decode(state)
             x1, y1, _, _ = self.env.decode(next_state)
 
+            # Update the policy parameters
             pol = self.policies[optNum]
             curr_param = pol.params
             pol.change_params(max(params_min, params_decay * curr_param))
 
             total_rewards += reward
             reward_surr = reward
+
+            # If the option is completed sucessfully give a positive reward
             if optDone:
-                reward_surr = 10
+                reward_surr = 20
+            
+            # Update option
             self.Q[optNum][encode_state(x, y), optAct] += alpha*(reward_surr + gamma * np.max(self.Q[optNum][encode_state(x1, y1), :]) - self.Q[optNum][encode_state(x, y), optAct])    
 
+
+            # Update Q values of those options with the same action as the current
             for i in range(len(self.policies)):
                 tmp_act, tmp_done = self.forward(state, i, self.policies[i])
                 if tmp_act == optAct:
@@ -135,6 +145,9 @@ class Option():
         return state, total_rewards, steps, done
     
     def plot_intra_option_q_table(self, name):
+        '''
+        Plot the maximizing actions of the options
+        '''
         fig, axs = plt.subplots(2, 2)
         fig.set_figheight(15)
         fig.set_figwidth(20)
@@ -183,6 +196,9 @@ class Option():
 
 class Option2():
     def __init__(self, env: Env, num_options=2, policy='egreedy', params=0.1, seed=42):
+        '''
+        Initalize the option
+        '''
         self.env = env
         self.goal = {
             0: (0, 0),
@@ -209,16 +225,16 @@ class Option2():
     def forward(self, state, optNum, policy) -> tuple[int, bool]:
         optDone = False
         x, y, p, d = self.env.decode(state)
+        
+        # If option is done then exit, else select action according to policy
         if (x, y) in list(self.goal.values()):
             key = self.revGoal[(x, y)]
             if p == key:
-                #print(optNum)
                 optAct = policy(self.Q[optNum], state)    
-                optDone = True if optAct == 4 else False
+                optDone = True if optAct == 4 else False # Option is done when pickup is initiated at the correct location
             elif d == key:
-                #print(optNum)
                 optAct = policy(self.Q[optNum], state)    
-                optDone = True if optAct == 5 else False
+                optDone = True if optAct == 5 else False # Option is done when drop is initiated at the correct location
             else:
                 optAct = policy(self.Q[optNum], state)    
 
@@ -231,10 +247,12 @@ class Option2():
         reward_bar, total_rewards = 0, 0
         steps = 0
         optDone = False
-        while not optDone and not done:
-            optAct, optDone = self.forward(state, optNum, self.policies[optNum])
-            next_state, reward, done,_, _ = self.env.step(optAct)
 
+        while not optDone and not done:
+            optAct, optDone = self.forward(state, optNum, self.policies[optNum]) # Get action
+            next_state, reward, done,_, _ = self.env.step(optAct) # Execute action
+
+            # Update policy parameters
             pol = self.policies[optNum]
             curr_param = pol.params
             pol.change_params(max(params_min, params_decay * curr_param))
@@ -244,12 +262,14 @@ class Option2():
             total_rewards += reward
             reward_surr = reward
             
+            # If the option is completed sucessfully give a positive reward
             if optDone and optNum == 0 and optAct == 4:
                 reward_surr = 20
 
             if optNum == 1 and optDone and optAct == 5:
                 reward_surr = 20
 
+            # If illegal action is initiated give a large negative reward
             if optNum == 0 and optAct == 5:
                 reward_surr = -20
                 optDone = True
@@ -258,7 +278,8 @@ class Option2():
                 reward_surr = -20
                 optDone = True
 
-            self.Q[optNum][state, optAct] += alpha*(reward_surr + gamma * np.max(self.Q[optNum][next_state, :]) - self.Q[optNum][state, optAct])    
+            # Update option
+            self.Q[optNum][state, optAct] += alpha*(reward_surr + gamma * np.max(self.Q[optNum][next_state, :]) - self.Q[optNum][state, optAct]) 
             state = next_state
             
         return state, reward_bar, steps, total_rewards, done
@@ -270,9 +291,10 @@ class Option2():
 
         while not done and not optDone:
             steps += 1
-            optAct, optDone = self.forward(state, optNum, self.policies[optNum])
-            next_state, reward, done, _, _ = self.env.step(optAct)
+            optAct, optDone = self.forward(state, optNum, self.policies[optNum]) # Get action
+            next_state, reward, done, _, _ = self.env.step(optAct) # Execute action
 
+            # Update the policy parameters
             pol = self.policies[optNum]
             curr_param = pol.params
             pol.change_params(max(params_min, params_decay * curr_param))
@@ -280,12 +302,14 @@ class Option2():
             total_rewards += reward
             reward_surr = reward
 
+            # If the option is completed sucessfully give a positive reward
             if optDone and optNum == 0 and optAct == 4:
                 reward_surr = 20
 
             if optNum == 1 and optDone and optAct == 5:
                 reward_surr = 20
 
+            # If illegal action is initiated give a large negative reward
             if optNum == 0 and optAct == 5:
                 reward_surr = -20
                 optDone = True
@@ -294,8 +318,10 @@ class Option2():
                 reward_surr = -20
                 optDone = True
         
+            # Update option
             self.Q[optNum][state, optAct] += alpha*(reward_surr + gamma * np.max(self.Q[optNum][next_state, :]) - self.Q[optNum][state, optAct])    
 
+            # Update Q values of those options with the same action as the current
             for i in range(len(self.policies)):
                 tmp_act, tmp_done = self.forward(state, i, self.policies[i])
                 if tmp_act == optAct:
@@ -312,6 +338,9 @@ class Option2():
         return state, total_rewards, steps, done
 
     def plot_intra_option_q_table(self, p, d, name):
+        '''
+        Plot the maximizing actions of the options for a particular p and d
+        '''
         fig, axs = plt.subplots(1, 2)
         fig.set_figheight(10)
         fig.set_figwidth(15)
@@ -353,7 +382,7 @@ class Option2():
         legend_elements = [plt.Line2D([0], [0], marker='o', color='w', label=action_symbol + ' - ' + action_meaning,
                                  markersize=10) for action_symbol, action_meaning in zip(action_symbols, action_meanings)]
         fig.legend(handles=legend_elements, loc='upper left')
-        fig.suptitle('Intra-Option Policies (When Passenger is in Taxi)')
+        fig.suptitle('Intra-Option Policies')
         plt.savefig(name)
     
 
